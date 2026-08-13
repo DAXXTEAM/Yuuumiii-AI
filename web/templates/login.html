@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>YUUUMIII — ACCESS CONTROL</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#000; overflow:hidden; font-family:'Share Tech Mono',monospace; color:#00f5ff; height:100vh; }
+
+/* Matrix rain canvas background */
+canvas#matrix { position:fixed; inset:0; z-index:0; opacity:0.15; }
+
+/* Central login card */
+.login-wrap {
+  position:relative; z-index:10;
+  display:flex; align-items:center; justify-content:center;
+  height:100vh;
+}
+.login-card {
+  width:420px;
+  background:rgba(0,5,15,0.92);
+  border:1px solid rgba(0,245,255,0.25);
+  border-radius:4px;
+  padding:48px 40px;
+  position:relative;
+  backdrop-filter:blur(20px);
+  box-shadow:0 0 60px rgba(0,245,255,0.08), inset 0 0 40px rgba(0,245,255,0.02);
+}
+
+/* Corner accents */
+.login-card::before, .login-card::after {
+  content:''; position:absolute; width:20px; height:20px; border-style:solid; border-color:#00f5ff;
+}
+.login-card::before { top:-1px; left:-1px; border-width:2px 0 0 2px; }
+.login-card::after  { bottom:-1px; right:-1px; border-width:0 2px 2px 0; }
+
+/* Scanning line effect */
+.scan-line {
+  position:absolute; top:0; left:0; width:100%; height:2px;
+  background:linear-gradient(90deg, transparent, #00f5ff, transparent);
+  animation:scan 3s ease-in-out infinite;
+}
+@keyframes scan { 0%,100%{top:0;opacity:0} 10%{opacity:1} 90%{opacity:1} to{top:100%;opacity:0} }
+
+/* Logo */
+.logo { text-align:center; margin-bottom:40px; }
+.logo h1 {
+  font-family:'Orbitron',sans-serif; font-size:2rem; font-weight:900;
+  color:#00f5ff; letter-spacing:12px;
+  text-shadow:0 0 20px rgba(0,245,255,0.8), 0 0 40px rgba(0,245,255,0.4);
+  animation:glitch 4s infinite;
+}
+@keyframes glitch {
+  0%,94%,100%{text-shadow:0 0 20px rgba(0,245,255,0.8),0 0 40px rgba(0,245,255,0.4);transform:translate(0)}
+  95%{text-shadow:-3px 0 #ff0080,3px 0 #00f5ff;transform:translate(-2px,1px)}
+  97%{text-shadow:3px 0 #ff0080,-3px 0 #00f5ff;transform:translate(2px,-1px)}
+  99%{text-shadow:0 0 20px rgba(0,245,255,0.8);transform:translate(1px,0)}
+}
+.logo-sub { font-size:0.6rem; color:rgba(0,245,255,0.4); letter-spacing:5px; margin-top:8px; }
+
+/* Hexagon avatar */
+.hex-avatar {
+  width:70px; height:70px; margin:0 auto 20px;
+  background:linear-gradient(135deg,rgba(0,245,255,0.2),rgba(180,0,255,0.2));
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Orbitron'; font-size:1.4rem; color:#00f5ff;
+  animation:hexPulse 2s ease-in-out infinite;
+  box-shadow:0 0 30px rgba(0,245,255,0.3);
+}
+@keyframes hexPulse { 0%,100%{box-shadow:0 0 20px rgba(0,245,255,0.3)} 50%{box-shadow:0 0 40px rgba(0,245,255,0.6)} }
+
+/* Status line */
+.status-line { font-size:0.6rem; color:rgba(0,245,255,0.5); letter-spacing:3px; text-align:center; margin-bottom:32px; }
+.status-blink { animation:blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* Input fields */
+.field { margin-bottom:20px; position:relative; }
+.field label { display:block; font-size:0.6rem; color:rgba(0,245,255,0.5); letter-spacing:2px; margin-bottom:8px; }
+.field input {
+  width:100%; background:rgba(0,245,255,0.04);
+  border:1px solid rgba(0,245,255,0.2); border-radius:2px;
+  color:#00f5ff; font-family:'Share Tech Mono'; font-size:0.9rem;
+  padding:12px 16px; outline:none; transition:all 0.3s;
+  letter-spacing:2px;
+}
+.field input::placeholder { color:rgba(0,245,255,0.2); }
+.field input:focus {
+  border-color:#00f5ff; background:rgba(0,245,255,0.08);
+  box-shadow:0 0 15px rgba(0,245,255,0.15), inset 0 0 10px rgba(0,245,255,0.05);
+}
+/* Input prefix icon */
+.field-icon { position:absolute; left:14px; top:38px; color:rgba(0,245,255,0.4); font-size:0.75rem; }
+.field-icon ~ input { padding-left:36px; }
+
+/* Login button */
+.login-btn {
+  width:100%; padding:14px;
+  background:transparent;
+  border:1px solid #00f5ff;
+  color:#00f5ff; font-family:'Orbitron'; font-size:0.75rem;
+  letter-spacing:4px; cursor:pointer; border-radius:2px;
+  position:relative; overflow:hidden; margin-top:8px;
+  transition:all 0.3s; text-transform:uppercase;
+}
+.login-btn::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(90deg,transparent,rgba(0,245,255,0.1),transparent);
+  transform:translateX(-100%); transition:transform 0.4s;
+}
+.login-btn:hover::before { transform:translateX(100%); }
+.login-btn:hover {
+  background:rgba(0,245,255,0.1);
+  box-shadow:0 0 20px rgba(0,245,255,0.3);
+  letter-spacing:6px;
+}
+.login-btn.loading { pointer-events:none; }
+.login-btn.loading::after {
+  content:'AUTHENTICATING...';
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(0,5,15,0.9);
+  animation:authText 0.05s steps(1) infinite;
+}
+
+/* Error message */
+.err-msg { color:#ff4466; font-size:0.65rem; letter-spacing:1px; margin-top:12px; text-align:center; min-height:16px; }
+
+/* Bottom security text */
+.security-text { font-size:0.55rem; color:rgba(0,245,255,0.2); text-align:center; margin-top:24px; letter-spacing:2px; }
+
+/* Access granted animation */
+.access-granted {
+  display:none; position:fixed; inset:0; z-index:100;
+  background:#000; align-items:center; justify-content:center;
+  flex-direction:column; gap:16px;
+}
+.access-granted.show { display:flex; }
+.access-granted h2 { font-family:'Orbitron'; font-size:2rem; color:#00ff41; text-shadow:0 0 30px #00ff41; letter-spacing:6px; animation:accessPulse 0.5s ease-in-out; }
+@keyframes accessPulse { from{opacity:0;transform:scale(0.5)} to{opacity:1;transform:scale(1)} }
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="scan-line"></div>
+    <div class="logo">
+      <div class="hex-avatar">Y</div>
+      <h1>YUUUMIII</h1>
+      <div class="logo-sub">ADVANCED AI COMMAND INTERFACE</div>
+    </div>
+    <div class="status-line">[ SYSTEM ONLINE ] <span class="status-blink">_</span></div>
+    <div class="field">
+      <label>ACCESS CODE</label>
+      <input type="password" id="password" placeholder="Enter access code..." autofocus onkeydown="if(event.key==='Enter')login()">
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="login()">INITIALIZE ACCESS</button>
+    <div class="err-msg" id="errMsg"></div>
+    <div class="security-text">ENCRYPTED CONNECTION &nbsp;|&nbsp; YUUUMIII v1.0.0 &nbsp;|&nbsp; SECURE</div>
+  </div>
+</div>
+<div class="access-granted" id="accessGranted">
+  <h2>ACCESS GRANTED</h2>
+  <div style="font-family:'Share Tech Mono';color:rgba(0,255,65,0.6);letter-spacing:3px;font-size:0.8rem">INITIALIZING YUUUMIII INTERFACE...</div>
+</div>
+<script>
+// Matrix rain
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const chars = 'YUUUMIII01アイウエオカキクケコ0123456789ABCDEF';
+const fontSize = 14;
+const cols = Math.floor(canvas.width / fontSize);
+const drops = Array(cols).fill(1);
+function drawMatrix() {
+  ctx.fillStyle = 'rgba(0,0,0,0.05)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#00f5ff';
+  ctx.font = fontSize + 'px Share Tech Mono';
+  drops.forEach((y, i) => {
+    const char = chars[Math.floor(Math.random() * chars.length)];
+    ctx.fillText(char, i * fontSize, y * fontSize);
+    if (y * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+    drops[i]++;
+  });
+}
+setInterval(drawMatrix, 35);
+
+// Login
+async function login() {
+  const pw = document.getElementById('password').value;
+  if (!pw) { document.getElementById('errMsg').textContent = '[ ERROR: ACCESS CODE REQUIRED ]'; return; }
+  const btn = document.getElementById('loginBtn');
+  btn.classList.add('loading');
+  btn.textContent = 'AUTHENTICATING...';
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({password: pw})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('accessGranted').classList.add('show');
+      setTimeout(() => { window.location.href = '/dashboard'; }, 1800);
+    } else {
+      btn.classList.remove('loading');
+      btn.textContent = 'INITIALIZE ACCESS';
+      document.getElementById('errMsg').textContent = '[ ACCESS DENIED: INVALID CODE ]';
+      document.getElementById('password').value = '';
+      document.querySelector('.login-card').style.borderColor = '#ff4466';
+      setTimeout(() => document.querySelector('.login-card').style.borderColor = 'rgba(0,245,255,0.25)', 1000);
+    }
+  } catch(e) {
+    btn.classList.remove('loading');
+    btn.textContent = 'INITIALIZE ACCESS';
+    document.getElementById('errMsg').textContent = '[ NETWORK ERROR ]';
+  }
+}
+</script>
+</body>
+</html>

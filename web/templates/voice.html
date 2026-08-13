@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Yuuumiii Voice</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#fff;height:100vh;width:100vw;display:flex;flex-direction:column}
+.top-half{position:relative;height:50vh;overflow:hidden}
+.avatar-bg{position:absolute;inset:0;background-size:cover;background-position:center top;filter:brightness(0.7)}
+.gradient-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 30%,rgba(0,0,0,0.6) 70%,#000 100%)}
+.bottom-half{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:20px;position:relative;z-index:2}
+.voice-title{font-size:28px;font-weight:700;letter-spacing:8px;color:#00d4ff;text-shadow:0 0 30px rgba(0,212,255,0.5),0 0 60px rgba(0,212,255,0.2)}
+.voice-status{font-size:12px;letter-spacing:4px;font-weight:600;transition:color 0.3s}
+.voice-status.listening{color:#00d4ff}
+.voice-status.thinking{color:#64748b}
+.voice-status.speaking{color:#00ff88}
+.waveform{display:flex;align-items:center;gap:4px;height:40px}
+.wave-bar{width:4px;height:8px;border-radius:2px;background:#00d4ff;transition:height 0.15s ease,background 0.3s}
+.waveform.listening .wave-bar{animation:waveAnim 1.2s ease-in-out infinite;background:#00d4ff}
+.waveform.speaking .wave-bar{animation:waveAnimFast 0.6s ease-in-out infinite;background:#00ff88}
+.waveform.thinking .wave-bar{height:4px!important;background:#334155;animation:none}
+.wave-bar:nth-child(1){animation-delay:0s}
+.wave-bar:nth-child(2){animation-delay:0.1s}
+.wave-bar:nth-child(3){animation-delay:0.2s}
+.wave-bar:nth-child(4){animation-delay:0.3s}
+.wave-bar:nth-child(5){animation-delay:0.4s}
+.wave-bar:nth-child(6){animation-delay:0.5s}
+.wave-bar:nth-child(7){animation-delay:0.6s}
+.wave-bar:nth-child(8){animation-delay:0.7s}
+.wave-bar:nth-child(9){animation-delay:0.8s}
+@keyframes waveAnim{0%,100%{height:8px}50%{height:32px}}
+@keyframes waveAnimFast{0%,100%{height:6px}50%{height:36px}}
+.ai-reply{font-size:13px;color:rgba(255,255,255,0.8);text-align:center;max-width:320px;line-height:1.5;min-height:40px;display:flex;align-items:center;justify-content:center;overflow:hidden;text-overflow:ellipsis;-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical}
+.controls{display:flex;align-items:center;gap:24px;margin-top:12px}
+.stop-btn{width:56px;height:56px;border-radius:50%;background:rgba(255,68,102,0.2);border:2px solid #ff4466;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;font-size:20px;color:#ff4466}
+.stop-btn:hover{background:rgba(255,68,102,0.4);transform:scale(1.05)}
+.lang-badge{position:absolute;bottom:16px;right:16px;font-size:10px;padding:4px 10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:12px;color:rgba(255,255,255,0.5);letter-spacing:2px}
+</style>
+</head>
+<body>
+<div class="top-half">
+  <div class="avatar-bg" id="avatarBg"></div>
+  <div class="gradient-overlay"></div>
+</div>
+<div class="bottom-half">
+  <div class="voice-title">YUUUMIII</div>
+  <div class="voice-status listening" id="voiceStatus">LISTENING</div>
+  <div class="waveform listening" id="waveform">
+    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+  </div>
+  <div class="ai-reply" id="aiReply"></div>
+  <div class="controls">
+    <div class="stop-btn" onclick="stopVoice()">&#10005;</div>
+    <button onclick="toggleLang()" id="langBtn" style="width:48px;height:48px;border-radius:50%;background:rgba(0,212,255,0.15);border:2px solid #00d4ff;color:#00d4ff;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all 0.2s">HI</button>
+  </div>
+  <div class="lang-badge" id="langBadge">HI-IN</div>
+</div>
+<script>
+// Avatar will be loaded from static
+document.getElementById('avatarBg').style.backgroundImage='url(/static/avatar.jpg)';
+
+let recognition,synth=window.speechSynthesis,isListening=false;
+let voiceLang='hi-IN';
+function toggleLang(){
+  voiceLang=voiceLang==='hi-IN'?'en-US':'hi-IN';
+  document.getElementById('langBtn').textContent=voiceLang==='hi-IN'?'HI':'EN';
+  document.getElementById('langBadge').textContent=voiceLang==='hi-IN'?'HI-IN':'EN-US';
+  if(recognition){try{recognition.stop();}catch(e){}}
+  setTimeout(()=>{if(recognition){recognition.lang=voiceLang;}startListening();},300);
+}
+const statusEl=document.getElementById('voiceStatus');
+const waveEl=document.getElementById('waveform');
+const replyEl=document.getElementById('aiReply');
+
+function setState(state){
+  statusEl.className='voice-status '+state;
+  waveEl.className='waveform '+state;
+  if(state==='listening'){statusEl.textContent='LISTENING'}
+  else if(state==='thinking'){statusEl.textContent='THINKING'}
+  else if(state==='speaking'){statusEl.textContent='SPEAKING'}
+}
+
+function initRecognition(){
+  if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){
+    replyEl.textContent='Speech recognition not supported';return;
+  }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SR();
+  recognition.lang=voiceLang;
+  recognition.continuous=false;
+  recognition.interimResults=false;
+
+  recognition.onstart=()=>{isListening=true;setState('listening')};
+  recognition.onresult=async(e)=>{
+    const text=e.results[0][0].transcript;
+    setState('thinking');
+    try{
+      const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
+      if(r.ok){
+        const d=await r.json();
+        const reply=d.response||d.message||'';
+        replyEl.textContent=reply.slice(0,100);
+        speak(reply);
+      }else{setState('listening');startListening()}
+    }catch(e){setState('listening');startListening()}
+  };
+  recognition.onerror=()=>{setTimeout(startListening,1000)};
+  recognition.onend=()=>{if(isListening&&!synth.speaking)startListening()};
+}
+
+function startListening(){
+  if(!recognition)return;
+  try{recognition.start()}catch(e){setTimeout(startListening,500)}
+}
+
+function speak(text){
+  setState('speaking');
+  const utt=new SpeechSynthesisUtterance(text.slice(0,200));
+  utt.lang=voiceLang;utt.rate=1.0;
+  utt.onend=()=>{setState('listening');startListening()};
+  utt.onerror=()=>{setState('listening');startListening()};
+  synth.speak(utt);
+}
+
+function stopVoice(){
+  isListening=false;
+  if(recognition)try{recognition.stop()}catch(e){}
+  synth.cancel();
+  window.close();
+}
+
+// Auto-start
+initRecognition();
+setTimeout(startListening,500);
+</script>
+</body>
+</html>

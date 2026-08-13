@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.db
+*.bak
+config.json
+chat_history.json
+sessions.json
+user_prefs.json
+crm.json
+automation_events.json
+uploads/
+.env
