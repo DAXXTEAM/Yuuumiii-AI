@@ -60,7 +60,7 @@ persistent_history = load_history()
 conversation_history = persistent_history
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config.json")
 
-OPENCODE_KEY = "OPENCODE_KEY_HERE"
+OPENCODE_KEY = "sk-mP4T4D48wiobgc3YTEf9wdDvuk1LwrujY076LgVxG0p3sR1kdgtAH1B0VTb1LRrk"
 OPENCODE_URL = "https://opencode.ai/zen/v1"
 VPS_HOST = "216.9.227.103"
 VPS_USER = "root"
@@ -78,7 +78,7 @@ if os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(_
     except: pass
 
 
-YUUUMIII_SYSTEM = """Aap Yuuumiii hain - DAXX ki powerful AI assistant. Claude Sonnet 4.5 use karti hain.
+YUUUMIII_SYSTEM = """Aap Yuuumiii hain - Arpit ki powerful AI assistant. Claude Sonnet 4.5 use karti hain.
 
 Aap VPS se connected hain (216.9.227.103). Jab user kuch karne ko bole:
 - Agar VPS command chahiye to [VPS_CMD: command_here] format mein likho

@@ -51,7 +51,7 @@ class Agent:
             raise Exception("API key not set. Run: python main.py --setup")
 
         payload = {"model": model, "messages": messages, "max_tokens": 2048}
-        if tools:
+        if tools and provider != "opencode":
             payload["tools"] = TOOLS
             payload["tool_choice"] = "auto"
 
