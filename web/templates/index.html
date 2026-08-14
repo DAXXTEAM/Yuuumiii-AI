@@ -349,6 +349,7 @@ body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
             </div>
             <div style="display:flex;align-items:center;gap:10px">
               <span class="char-count" id="charCount">0</span>
+              <button id="agentModeBtn" onclick="toggleAgentMode()" class="cbtn" style="border-color:rgba(255,0,128,0.4);color:var(--pink)">AGENT</button>
               <button class="send-btn" id="sendBtn" onclick="sendMsg()">SEND</button>
             </div>
           </div>
@@ -704,6 +705,7 @@ async function sendMsg() {
   var text = inp.value.trim();
   if (!text) return;
   inp.value = ''; updateCount();
+  if (agentMode) { sending = true; document.getElementById('sendBtn').disabled = true; await sendAgentTask(text); sending = false; document.getElementById('sendBtn').disabled = false; return; }
   sending = true;
   document.getElementById('sendBtn').disabled = true;
   addMsg('user', text);
@@ -931,6 +933,77 @@ function tick() {
   var h=Math.floor(diff/3600),m=Math.floor((diff%3600)/60),s=diff%60;
   var up = document.getElementById('uptime');
   if(up) up.textContent = ('0'+h).slice(-2)+':'+('0'+m).slice(-2)+':'+('0'+s).slice(-2);
+}
+
+
+// ====== AGENT MODE ======
+let agentMode = false;
+let agentTaskId = null;
+let agentPollInterval = null;
+
+function toggleAgentMode() {
+    agentMode = !agentMode;
+    const btn = document.getElementById('agentModeBtn');
+    if (agentMode) {
+        btn.style.background = 'rgba(255,0,128,0.2)';
+        btn.style.borderColor = 'var(--pink)';
+        btn.textContent = 'AGENT:ON';
+        addMsg('ai', 'Agent Mode ON - main autonomously tasks execute karunga. VPS commands, file edits, GitHub, sab khud se.');
+    } else {
+        btn.style.background = 'transparent';
+        btn.style.borderColor = 'rgba(255,0,128,0.4)';
+        btn.textContent = 'AGENT';
+        addMsg('ai', 'Agent Mode OFF - normal chat mode.');
+    }
+}
+
+async function sendAgentTask(text) {
+    addMsg('user', text);
+    var think = addThinking();
+    try {
+        var r = await fetch('/api/autonomous-task', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            credentials: 'include',
+            body: JSON.stringify({task: text})
+        });
+        think.remove();
+        if (r.ok) {
+            var d = await r.json();
+            if (d.ok) {
+                agentTaskId = d.task_id;
+                addMsg('ai', 'Agent task started: #' + d.task_id + '\nAutonomously executing... Updates har 10s.');
+                startAgentPoll(d.task_id);
+            } else {
+                addMsg('ai', 'Error: ' + (d.error || 'Unknown'));
+            }
+        } else {
+            addMsg('ai', '[Error] Server ' + r.status);
+        }
+    } catch(e) {
+        think.remove();
+        addMsg('ai', '[Error] ' + e.message);
+    }
+}
+
+function startAgentPoll(taskId) {
+    if (agentPollInterval) clearInterval(agentPollInterval);
+    agentPollInterval = setInterval(async function() {
+        try {
+            var r = await fetch('/api/agent-status/' + taskId, {credentials: 'include'});
+            var d = await r.json();
+            if (d.status === 'done' || d.status === 'completed') {
+                clearInterval(agentPollInterval);
+                agentPollInterval = null;
+                addMsg('ai', 'Task #' + taskId + ' DONE\n\nResult: ' + (d.result || 'Completed'));
+            } else if (d.status === 'failed') {
+                clearInterval(agentPollInterval);
+                agentPollInterval = null;
+                addMsg('ai', 'Task #' + taskId + ' FAILED\n\nReason: ' + (d.result || 'Unknown error'));
+            }
+            // Update progress in existing messages area if needed
+        } catch(e) {}
+    }, 10000);
 }
 
 // ====== INIT (single, no duplicates) ======

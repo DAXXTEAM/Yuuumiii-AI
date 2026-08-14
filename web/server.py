@@ -1029,6 +1029,65 @@ async def delete_contact(contact_id: int, request: Request):
     return {"ok": True}
 
 
+
+
+# ===== AUTONOMOUS AGENT SYSTEM =====
+@app.post("/api/autonomous-task")
+async def autonomous_task_endpoint(data: dict, request: Request, background_tasks: BackgroundTasks):
+    if not check_auth(request):
+        return {"error": "Unauthorized"}
+
+    task = data.get('task', '').strip()
+    if not task:
+        return {'error': 'No task provided'}
+
+    vps_pass = os.environ.get('VPS_PASSWORD', 'Wu2Vcvxv')
+
+    # Create a task entry
+    task_id = task_manager.add_task(task)
+    task_manager.update_task(task_id, status="running", progress=5, log="Agent mode: starting autonomous execution")
+
+    # Run autonomously in background
+    def run_autonomous():
+        try:
+            from core.autonomous_agent import execute_autonomous_task
+
+            def on_step(step_num, desc):
+                progress = min(10 + step_num * 9, 95)
+                task_manager.update_task(task_id, progress=progress, log=f"[Step {step_num}] {desc}")
+
+            result = execute_autonomous_task(task, vps_pass, max_steps=10, on_step=on_step)
+            final_status = 'done' if result['success'] else 'failed'
+            task_manager.update_task(
+                task_id,
+                status=final_status,
+                progress=100 if result['success'] else 50,
+                result=result['result'],
+                log=f"Completed in {result['total_steps']} steps"
+            )
+        except Exception as e:
+            task_manager.update_task(task_id, status='failed', result=str(e), log=f"Fatal: {str(e)}")
+
+    background_tasks.add_task(run_autonomous)
+
+    return {
+        'ok': True,
+        'task_id': task_id,
+        'message': f'Autonomous task started. Track: /task/{task_id}',
+        'task': task
+    }
+
+
+@app.get("/api/agent-status/{task_id}")
+async def agent_status_endpoint(task_id: str, request: Request):
+    if not check_auth(request):
+        return {"error": "Unauthorized"}
+    task = task_manager.get_task(task_id)
+    if not task:
+        return {"error": "Task not found"}
+    return task
+
+
 def run_server(host="0.0.0.0", port=8080):
     print(f"\n Web UI starting at http://{host}:{port}\n")
     uvicorn.run(app, host=host, port=port, log_level="info")

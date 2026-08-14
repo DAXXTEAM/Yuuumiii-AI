@@ -1,17 +1,19 @@
 module.exports = {
   apps: [
     {
-      name: 'daxx-assistant',
+      name: 'Yuuumiii-AI',
       script: 'main.py',
       interpreter: 'python3',
-      cwd: '/root/daxx-assistant'
+      cwd: '/root/Yuuumiii-AI',
+      max_memory_restart: '512M'
     },
     {
       name: 'yuuumiii-bot',
       script: 'telegram_bot.py',
       interpreter: 'python3',
-      cwd: '/root/daxx-assistant',
-      restart_delay: 5000
+      cwd: '/root/Yuuumiii-AI',
+      restart_delay: 5000,
+      max_memory_restart: '256M'
     }
   ]
 }
