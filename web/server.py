@@ -78,23 +78,39 @@ if os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(_
     except: pass
 
 
-YUUUMIII_SYSTEM = """Aap Yuuumiii hain - Arpit ki powerful AI assistant. Claude Sonnet 4.5 use karti hain.
+YUUUMIII_SYSTEM = """Tu Yuuumiii hai - Arpit ki personal AI assistant. Tu ek expert developer, sysadmin, aur problem-solver hai.
 
-Aap VPS se connected hain (216.9.227.103). Jab user kuch karne ko bole:
-- Agar VPS command chahiye to [VPS_CMD: command_here] format mein likho
-- Agar file banana ho to [VPS_CMD: cat > /path/file << 'EOF'\ncontent\nEOF] 
-- Normal jawab bhi do result ke saath
+PERSONALITY:
+- Hindi/Hinglish mein baat kar naturally
+- Direct aur confident reh - bakwaas mat kar
+- Kaam pehle batao, explanation baad mein
+- Arpit ko "bhai" ya naam se mat bulao - direct reply de
 
-Jab user koi lamba kaam karne ko bole (VPS pe kuch banao, files process karo, research karo etc.) to [BACKGROUND_TASK: task description here] format use karo. Normal sawaalon ka jawab normal do.
+CAPABILITIES (tu ye sab kar sakti hai):
+- VPS pe commands run karna (216.9.227.103)
+- Code likhna, fix karna, deploy karna
+- GitHub repos manage karna (DAXXTEAM)
+- PM2 services control karna
+- Files read/write karna
+- Web search karna
+- Telegram bot manage karna
 
-Rules:
-- Naam hamesha Yuuumiii
-- Hindi/Hinglish mein baat karo
-- Koi emoji mat use karo
-- Plain text
-- Direct kaam karo, guide mat karo
-- [VPS_CMD: ...] use karo jab VPS pe kuch karna ho
-- [BACKGROUND_TASK: ...] use karo jab lamba kaam background mein karna ho"""
+VPS INFO:
+- IP: 216.9.227.103
+- OS: Ubuntu 22.04
+- Services: Yuuumiii-AI (8080), yuuumiii-bot, shopify-api, stripe-hitter, web-vclub-api, vclub-x
+- Main project: /root/Yuuumiii-AI/
+
+RULES:
+- Agar koi task diya to seedha kar de, pooch mat
+- Agar error aaye to khud fix karke batao
+- Code mein comment Hindi mein likh sakti hai
+- Short aur crisp reply de
+- Emojis mat use kar - plain text prefer kar
+
+Owner: Arpit (Telegram ID: 8751571968)
+GitHub: DAXXTEAM
+"""
 
 # Background task keywords
 TASK_KEYWORDS = ["background mein", "task do", "baad mein karo", "schedule karo", "run karo", "kaam karo"]
@@ -399,6 +415,20 @@ async def chat(req: ChatRequest, request: Request, background_tasks: BackgroundT
         enhanced_msg = req.message + f"\n\n[Invoice request: Client={client_name}, Amount=Rs.{amount}]"
 
 
+
+    # Add VPS context if task seems technical
+    msg_lower_check = req.message.lower()
+    if any(w in msg_lower_check for w in ['vps', 'server', 'service', 'pm2', 'deploy', 'restart', 'error', 'fix', 'code', 'github']):
+        try:
+            import subprocess as _sp_ctx
+            _ssh_cmd = "pm2 list --no-color 2>/dev/null | head -20 || echo pm2_unavailable"
+            _ssh_args = ['sshpass', '-p', vps_pass, 'ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'PubkeyAuthentication=no', 'root@216.9.227.103', _ssh_cmd]
+            pm2_out = _sp_ctx.run(_ssh_args, capture_output=True, text=True, timeout=10).stdout.strip()
+            if pm2_out and 'pm2_unavailable' not in pm2_out:
+                enhanced_msg = enhanced_msg + "\n\n[Current VPS Services:\n" + pm2_out[:300] + "]"
+        except:
+            pass
+
     # --- FEATURE 5: Learning context ---
     learning_ctx = get_learning_context()
     enhanced_system = YUUUMIII_SYSTEM
@@ -472,6 +502,10 @@ async def chat(req: ChatRequest, request: Request, background_tasks: BackgroundT
         # Save to AI brain long-term memory
         brain_save_memory('user', req.message)
         brain_save_memory('assistant', clean_reply, importance=2)
+        # Extract and save important facts
+        if any(w in req.message.lower() for w in ['mera', 'main', 'mere', 'password', 'token', 'port', 'ip']):
+            brain_save_memory('fact', f"User said: {req.message[:100]}", importance=3)
+
 
         # Learn from conversation
         learn_from_conversation(req.message, clean_reply)

@@ -15,8 +15,19 @@ OPENCODE_URL = "https://opencode.ai/zen/v1"
 CONFIG_PATH = '/root/Yuuumiii-AI/config.json'
 API_BASE = "http://localhost:8080"
 
-SYSTEM = """Aap Yuuumiii hain - Arpit ki AI assistant. Hindi/Hinglish mein baat karo. Koi emoji mat use karo. Short aur clear jawab do.
-Agar user koi complex task deta hai (fix code, deploy, check services, etc) to suggest karo ki /task command use kare."""
+SYSTEM = """Tu Yuuumiii hai - Arpit ki autonomous AI assistant Telegram pe.
+
+Kaam karne ka tarika:
+- /task diya to autonomous agent use kar
+- Seedha kaam kar, puchha mat kar
+- Hindi/Hinglish mein jawab de
+- Crisp aur useful reply de
+- VPS access hai, GitHub access hai, sab hai
+
+Owner: Arpit
+Telegram ID: 8751571968
+API_ID: 24509589
+"""
 
 # Track active tasks being polled
 active_polls = {}
@@ -38,8 +49,14 @@ def load_cfg():
     return {}
 
 
-async def send_tg(chat_id, text, token, parse_mode=None):
-    payload = {"chat_id": chat_id, "text": text[:4000]}
+async def send_tg(chat_id, text, token, parse_mode="HTML"):
+    import re, html as _html
+    safe = _html.escape(str(text))
+    safe = re.sub(r"#{1,3} (.+)", r"<b>\1</b>", safe)
+    safe = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", safe)
+    safe = re.sub(r"\*([^*\n]+)\*", r"<i>\1</i>", safe)
+    safe = re.sub(r"`([^`]+)`", r"<code>\1</code>", safe)
+    payload = {"chat_id": chat_id, "text": safe[:4000]}
     if parse_mode:
         payload["parse_mode"] = parse_mode
     try:
