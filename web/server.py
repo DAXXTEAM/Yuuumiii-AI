@@ -342,21 +342,14 @@ async def chat(req: ChatRequest, request: Request, background_tasks: BackgroundT
                 img_prompt = req.message[len(t):].strip()
                 break
         if img_prompt:
-            try:
-                async with _httpx.AsyncClient(timeout=30) as _c:
-                    _r = await _c.post(f"{OPENCODE_URL}/images/generations",
-                        headers={'Authorization': f'Bearer {OPENCODE_KEY}'},
-                        json={'model': 'dall-e-3', 'prompt': img_prompt, 'n': 1, 'size': '512x512'})
-                    _d = _r.json()
-                    if 'data' in _d and len(_d['data']) > 0:
-                        img_url = _d['data'][0].get('url', '')
-                        img_response = f"Image generated: {img_url}"
-                        conversation_history.append({'role': 'user', 'content': req.message, 'time': datetime.datetime.now().strftime('%H:%M')})
-                        conversation_history.append({'role': 'assistant', 'content': img_response})
-                        save_history(conversation_history)
-                        return {'response': img_response, 'tools': ['image_gen'], 'model': 'DALL-E 3', 'image_url': img_url}
-            except:
-                pass
+            import urllib.parse as _urlparse
+            _encoded_prompt = _urlparse.quote(img_prompt)
+            img_url = f"https://image.pollinations.ai/prompt/{_encoded_prompt}?width=512&height=512&nologo=true"
+            img_response = f"Image generated: {img_url}"
+            conversation_history.append({'role': 'user', 'content': req.message, 'time': datetime.datetime.now().strftime('%H:%M')})
+            conversation_history.append({'role': 'assistant', 'content': img_response})
+            save_history(conversation_history)
+            return {'response': img_response, 'tools': ['image_gen'], 'model': 'Pollinations.ai', 'image_url': img_url}
 
     # --- FEATURE: GitHub repos in chat ---
     if any(w in msg_lower for w in ['repos dikhao', 'github repos', 'my repos', 'mere repos']):
@@ -842,39 +835,15 @@ start_automator()
 # ===== FEATURE: IMAGE GENERATION =====
 @app.post("/api/imagine")
 async def imagine(data: dict, request: Request):
-    import httpx
+    import urllib.parse
     if not check_auth(request):
         return {"error": "Unauthorized"}
     prompt = data.get('prompt', '')
     if not prompt:
         return {'error': 'No prompt provided'}
-    try:
-        async with httpx.AsyncClient(timeout=30) as c:
-            # Try image generation first
-            try:
-                r = await c.post(f"{OPENCODE_URL}/images/generations",
-                    headers={'Authorization': f'Bearer {OPENCODE_KEY}'},
-                    json={'model': 'dall-e-3', 'prompt': prompt, 'n': 1, 'size': '512x512'})
-                if r.status_code == 200 and r.text.strip():
-                    d = r.json()
-                    if 'data' in d and len(d['data']) > 0:
-                        return {'url': d['data'][0].get('url', ''), 'ok': True}
-            except:
-                pass
-            # Fallback: use chat AI to describe
-            r2 = await c.post(f"{OPENCODE_URL}/chat/completions",
-                headers={'Authorization': f'Bearer {OPENCODE_KEY}'},
-                json={'model': YUUUMIII_MODEL,
-                      'messages': [{'role': 'user', 'content': f'Create a vivid, detailed visual description of this image concept. Describe it as if painting a picture with words: {prompt}'}],
-                      'max_tokens': 400})
-            if r2.status_code == 200 and r2.text.strip():
-                d2 = r2.json()
-                if 'choices' in d2:
-                    desc = d2['choices'][0]['message']['content']
-                    return {'ok': False, 'description': desc, 'msg': 'Image generation not available via API. Here is a vivid description instead.'}
-            return {'ok': False, 'msg': 'Image generation service not available'}
-    except Exception as e:
-        return {'error': str(e)}
+    encoded = urllib.parse.quote(prompt)
+    img_url = f"https://image.pollinations.ai/prompt/{encoded}?width=512&height=512&nologo=true"
+    return {"ok": True, "image_url": img_url}
 
 
 # ===== FEATURE: GITHUB INTEGRATION =====
