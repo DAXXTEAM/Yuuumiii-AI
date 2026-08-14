@@ -1090,7 +1090,7 @@ async def autonomous_task_endpoint(data: dict, request: Request, background_task
                 progress = min(10 + step_num * 9, 95)
                 task_manager.update_task(task_id, progress=progress, log=f"[Step {step_num}] {desc}")
 
-            result = execute_autonomous_task(task, vps_pass, max_steps=10, on_step=on_step)
+            result = execute_autonomous_task(task, vps_pass, max_steps=50, on_step=on_step)
             final_status = 'done' if result['success'] else 'failed'
             task_manager.update_task(
                 task_id,

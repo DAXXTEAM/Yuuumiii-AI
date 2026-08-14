@@ -308,7 +308,7 @@ def call_llm(messages):
         return f"LLM Error: {e}"
 
 
-def execute_autonomous_task(task: str, vps_password: str, max_steps: int = 10, on_step=None):
+def execute_autonomous_task(task: str, vps_password: str, max_steps: int = 50, on_step=None):
     """
     Main agentic loop - executes task autonomously with tool use.
 
